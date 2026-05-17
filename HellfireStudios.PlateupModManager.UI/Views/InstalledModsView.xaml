@@ -1,0 +1,117 @@
+<UserControl x:Class="HellfireStudios.PlateupModManager.UI.Views.InstalledModsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="#1e1e2e">
+    <DockPanel Margin="24,20">
+        <!-- Header -->
+        <TextBlock DockPanel.Dock="Top" Text="Installed Mods" FontSize="24" FontWeight="Bold"
+                   Foreground="#cdd6f4" Margin="0,0,0,16" />
+
+        <!-- Action Bar -->
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <Button Content="Enable All" Command="{Binding EnableAllCommand}"
+                    Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" />
+            <Button Content="Disable All" Command="{Binding DisableAllCommand}"
+                    Style="{StaticResource DangerButtonStyle}" Margin="0,0,8,0" />
+            <Button Content="↻ Refresh" Command="{Binding RefreshCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" />
+        </WrapPanel>
+
+        <!-- Save as Profile Section -->
+        <Border DockPanel.Dock="Bottom" Background="#313244" CornerRadius="8" Padding="16,12" Margin="0,16,0,0">
+            <StackPanel>
+                <TextBlock Text="Save Current Mods as Profile" FontSize="14" FontWeight="SemiBold"
+                           Foreground="#cdd6f4" Margin="0,0,0,8" />
+                <DockPanel Margin="0,0,0,8">
+                    <TextBlock Text="Name:" Foreground="#bac2de" VerticalAlignment="Center"
+                               Width="80" FontSize="13" />
+                    <TextBox Text="{Binding SaveProfileName, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource DarkTextBoxStyle}" FontSize="13" Padding="8,6" />
+                </DockPanel>
+                <DockPanel Margin="0,0,0,8">
+                    <TextBlock Text="Description:" Foreground="#bac2de" VerticalAlignment="Center"
+                               Width="80" FontSize="13" />
+                    <TextBox Text="{Binding SaveProfileDescription, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource DarkTextBoxStyle}" FontSize="13" Padding="8,6" />
+                </DockPanel>
+                <Button Content="💾 Save Profile" Command="{Binding SaveAsProfileCommand}"
+                        Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Left" />
+            </StackPanel>
+        </Border>
+
+        <!-- Mods List -->
+        <ListView ItemsSource="{Binding Mods}" Background="Transparent" BorderThickness="0"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="#313244" CornerRadius="8" Padding="16,10" Margin="0,0,0,6">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Enabled indicator -->
+                            <Ellipse Grid.Column="0" Width="12" Height="12" Margin="0,0,12,0"
+                                     VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="#f38ba8" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEnabled}" Value="True">
+                                                <Setter Property="Fill" Value="#a6e3a1" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+
+                            <!-- Mod info -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="#cdd6f4" />
+                                <TextBlock Text="{Binding PublishedFileId, StringFormat='ID: {0}'}"
+                                           FontSize="11" Foreground="#6c7086" Margin="0,2,0,0" />
+                            </StackPanel>
+
+                            <!-- Toggle button -->
+                            <Button Grid.Column="2" VerticalAlignment="Center"
+                                    Command="{Binding DataContext.ToggleModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+                                        <Setter Property="Content" Value="Enable" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEnabled}" Value="True">
+                                                <Setter Property="Content" Value="Disable" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="0" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListViewItem">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+    </DockPanel>
+</UserControl>

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="HellfireStudios.PlateupModManager.UI\HellfireStudios.PlateupModManager.UI.csproj" Type="Classic C#" />
+  <Project Path="HellfireStudios.PlateupModManager\HellfireStudios.PlateupModManager.csproj" Type="Classic C#" />
+</Solution>

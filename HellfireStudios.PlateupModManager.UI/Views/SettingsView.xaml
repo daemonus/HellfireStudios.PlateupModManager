@@ -1,0 +1,63 @@
+<UserControl x:Class="HellfireStudios.PlateupModManager.UI.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="#1e1e2e">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24,20" MaxWidth="700" HorizontalAlignment="Left">
+            <!-- Header -->
+            <TextBlock Text="Settings" FontSize="24" FontWeight="Bold"
+                       Foreground="#cdd6f4" Margin="0,0,0,24" />
+
+            <!-- Steam API Key -->
+            <Border Background="#313244" CornerRadius="8" Padding="20,16" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Steam Web API Key" FontSize="15" FontWeight="SemiBold"
+                               Foreground="#cdd6f4" Margin="0,0,0,4" />
+                    <TextBlock Text="Required to browse the Steam Workshop. Get a free key at steamcommunity.com/dev/apikey"
+                               FontSize="12" Foreground="#6c7086" Margin="0,0,0,10" TextWrapping="Wrap" />
+                    <TextBox Text="{Binding SteamApiKey, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource DarkTextBoxStyle}" FontSize="13" Padding="10,8" />
+                </StackPanel>
+            </Border>
+
+            <!-- Paths Section -->
+            <Border Background="#313244" CornerRadius="8" Padding="20,16" Margin="0,0,0,16">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <TextBlock Text="Folder Paths" FontSize="15" FontWeight="SemiBold"
+                                   Foreground="#cdd6f4" DockPanel.Dock="Left" />
+                        <Button Content="🔍 Auto-Detect" Command="{Binding AutoDetectPathsCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}" DockPanel.Dock="Right"
+                                HorizontalAlignment="Right" FontSize="12" />
+                    </DockPanel>
+
+                    <!-- Steam Folder -->
+                    <TextBlock Text="Steam Installation Folder" FontSize="12" Foreground="#a6adc8" Margin="0,0,0,4" />
+                    <TextBox Text="{Binding SteamFolderPath, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource DarkTextBoxStyle}" FontSize="13" Padding="10,8"
+                             Margin="0,0,0,12" />
+
+                    <!-- Game Folder -->
+                    <TextBlock Text="PlateUp! Game Folder" FontSize="12" Foreground="#a6adc8" Margin="0,0,0,4" />
+                    <TextBox Text="{Binding GameFolderPath, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource DarkTextBoxStyle}" FontSize="13" Padding="10,8"
+                             Margin="0,0,0,12" />
+
+                    <!-- Workshop Content Folder -->
+                    <TextBlock Text="Workshop Content Folder (where mods are stored)" FontSize="12"
+                               Foreground="#a6adc8" Margin="0,0,0,4" />
+                    <TextBox Text="{Binding WorkshopFolderPath, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource DarkTextBoxStyle}" FontSize="13" Padding="10,8" />
+                </StackPanel>
+            </Border>
+
+            <!-- Save Button -->
+            <Button Content="💾 Save Settings" Command="{Binding SaveSettingsCommand}"
+                    Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Left"
+                    FontSize="14" Padding="24,10" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

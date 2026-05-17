@@ -1,0 +1,124 @@
+<UserControl x:Class="HellfireStudios.PlateupModManager.UI.Views.WorkshopBrowserView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="#1e1e2e">
+    <DockPanel Margin="24,20">
+        <!-- Header Row -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <Button DockPanel.Dock="Right" Content="↻ Reload" Command="{Binding LoadAllModsCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}" Margin="8,0,0,0" VerticalAlignment="Center" />
+            <TextBlock Text="Workshop Browser" FontSize="24" FontWeight="Bold"
+                       Foreground="#cdd6f4" VerticalAlignment="Center" />
+        </DockPanel>
+
+        <!-- Search Bar -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <Button DockPanel.Dock="Right" Content="✕ Clear" Command="{Binding ClearSearchCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}" Margin="8,0,0,0"
+                    Visibility="{Binding SearchText, Converter={StaticResource StringToVisibilityConverter}}" />
+            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                     Style="{StaticResource DarkTextBoxStyle}"
+                     FontSize="14" Padding="10,8" />
+        </DockPanel>
+
+        <!-- Error Message -->
+        <TextBlock DockPanel.Dock="Top" Text="{Binding ErrorMessage}" Foreground="#f38ba8"
+                   Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}"
+                   Margin="0,0,0,8" FontSize="13" />
+
+        <!-- Loading indicator -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal"
+                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Margin="0,0,0,8">
+            <TextBlock Text="{Binding LoadingProgress}" Foreground="#a6adc8" FontSize="14" />
+        </StackPanel>
+
+        <!-- Pagination -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <Button Content="← Previous" Command="{Binding PreviousPageCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}" DockPanel.Dock="Left" />
+            <Button Content="Next →" Command="{Binding NextPageCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}" DockPanel.Dock="Right" />
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
+                <TextBlock Foreground="#a6adc8" FontSize="13">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="Page {0} of {1} ({2} items)">
+                            <Binding Path="CurrentPage" />
+                            <Binding Path="TotalPages" />
+                            <Binding Path="TotalResults" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Workshop Items List -->
+        <ListView ItemsSource="{Binding WorkshopItems}" Background="Transparent" BorderThickness="0"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="#313244" CornerRadius="8" Padding="16,12" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="80" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Thumbnail -->
+                            <Border Grid.Column="0" Width="64" Height="64" CornerRadius="6"
+                                    Background="#45475a" ClipToBounds="True">
+                                <Image Source="{Binding PreviewUrl}" Stretch="UniformToFill" />
+                            </Border>
+
+                            <!-- Info -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0">
+                                <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"
+                                           Foreground="#cdd6f4" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#a6adc8"
+                                           TextTrimming="CharacterEllipsis" MaxHeight="36" TextWrapping="Wrap"
+                                           Margin="0,4,0,0" />
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBlock Text="{Binding Subscriptions, StringFormat='⭐ {0}'}"
+                                               Foreground="#f9e2af" FontSize="11" Margin="0,0,12,0" />
+                                    <TextBlock Text="{Binding Favorited, StringFormat='❤️ {0}'}"
+                                               Foreground="#f38ba8" FontSize="11" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Actions -->
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                <Button Content="Open in Steam"
+                                        Command="{Binding DataContext.OpenInSteamCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource PrimaryButtonStyle}" FontSize="12" Margin="0,0,0,4" />
+                                <Button Content="View in Browser"
+                                        Command="{Binding DataContext.OpenInBrowserCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource SecondaryButtonStyle}" FontSize="12" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="0" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListViewItem">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+    </DockPanel>
+</UserControl>
