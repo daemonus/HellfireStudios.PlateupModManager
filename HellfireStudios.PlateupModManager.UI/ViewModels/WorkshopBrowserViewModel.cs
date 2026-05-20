@@ -10,9 +10,11 @@ public partial class WorkshopBrowserViewModel : ObservableObject
 {
     private readonly SteamWorkshopService _workshopService;
     private readonly MainViewModel _mainVm;
+    private readonly ImageCacheService _imageCache = new();
 
     private List<WorkshopMod> _allItems = [];
     private bool _hasLoaded;
+    private CancellationTokenSource? _imageCacheCts;
 
     [ObservableProperty]
     private string _searchText = string.Empty;
@@ -187,6 +189,46 @@ public partial class WorkshopBrowserViewModel : ObservableObject
 
         WorkshopItems.Clear();
         foreach (var item in pageItems)
+        {
+            WorkshopItems.Add(item);
+        }
+
+        // Pre-cache thumbnails for this page in the background
+        PreCacheCurrentPageImages();
+    }
+
+    private void PreCacheCurrentPageImages()
+    {
+        _imageCacheCts?.Cancel();
+        _imageCacheCts = new CancellationTokenSource();
+        var token = _imageCacheCts.Token;
+
+        var urls = WorkshopItems
+            .Where(m => !string.IsNullOrEmpty(m.PreviewUrl) && _imageCache.GetCachedPath(m.PreviewUrl) == null)
+            .Select(m => m.PreviewUrl)
+            .ToList();
+
+        if (urls.Count == 0) return;
+
+        _ = Task.Run(async () =>
+        {
+            var tasks = urls.Select(url => _imageCache.GetOrDownloadAsync(url));
+            await Task.WhenAll(tasks);
+
+            if (!token.IsCancellationRequested)
+            {
+                // Refresh the list on the UI thread to pick up cached images
+                System.Windows.Application.Current?.Dispatcher.Invoke(RefreshCurrentItems);
+            }
+        }, token);
+    }
+
+    private void RefreshCurrentItems()
+    {
+        // Re-set the same items to force WPF to re-evaluate the image converter
+        var items = WorkshopItems.ToList();
+        WorkshopItems.Clear();
+        foreach (var item in items)
         {
             WorkshopItems.Add(item);
         }

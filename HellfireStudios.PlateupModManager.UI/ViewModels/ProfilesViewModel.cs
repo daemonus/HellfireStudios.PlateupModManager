@@ -55,9 +55,10 @@ public partial class ProfilesViewModel : ObservableObject
         var workshopPath = _mainVm.Settings.WorkshopFolderPath;
         if (string.IsNullOrEmpty(workshopPath)) return;
 
-        var modIds = profileVm.Profile.Mods.Select(m => m.PublishedFileId);
-        _modManagerService.ApplyModSet(workshopPath, modIds);
-        _mainVm.StatusMessage = $"Applied profile '{profileVm.Name}' ({profileVm.ModCount} mods)";
+        var backupDir = _profileService.GetProfileBackupPath(profileVm.Profile.Id);
+        var count = _modManagerService.ApplyProfile(workshopPath, backupDir);
+        _mainVm.StatusMessage = $"Applied profile '{profileVm.Name}' ({count} mods restored)";
+        _mainVm.InstalledModsVm.Refresh();
     }
 
     [RelayCommand]
@@ -94,7 +95,7 @@ public partial class ProfilesViewModel : ObservableObject
         IsSpeedRunModeRunning = true;
         _speedRunCts = new CancellationTokenSource();
 
-        var modIds = profileVm.Profile.Mods.Select(m => m.PublishedFileId).ToList();
+        var backupDir = _profileService.GetProfileBackupPath(profileVm.Profile.Id);
         var progress = new Progress<string>(msg =>
         {
             SpeedRunStatus = msg;
@@ -105,15 +106,15 @@ public partial class ProfilesViewModel : ObservableObject
         {
             await _gameService.RunSpeedRunModeAsync(
                 workshopPath,
+                backupDir,
                 _modManagerService,
-                modIds,
                 progress,
                 _speedRunCts.Token);
         }
         catch (OperationCanceledException)
         {
             SpeedRunStatus = "Speed run mode cancelled";
-            _modManagerService.DisableAllMods(workshopPath);
+            _modManagerService.RemoveAllMods(workshopPath);
         }
         catch (Exception ex)
         {

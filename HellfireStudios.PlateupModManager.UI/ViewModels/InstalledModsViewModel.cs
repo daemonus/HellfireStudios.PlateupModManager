@@ -41,46 +41,29 @@ public partial class InstalledModsViewModel : ObservableObject
             Mods.Add(vm);
         }
 
-        _mainVm.StatusMessage = $"{installed.Count} mods installed ({installed.Count(m => m.IsEnabled)} enabled)";
+        _mainVm.StatusMessage = $"{installed.Count} mods in workshop folder";
     }
 
     [RelayCommand]
-    private void ToggleMod(InstalledModItemViewModel? modVm)
+    private void RemoveMod(InstalledModItemViewModel? modVm)
     {
         var workshopPath = _mainVm.Settings.WorkshopFolderPath;
         if (string.IsNullOrEmpty(workshopPath) || modVm == null) return;
 
-        if (modVm.IsEnabled)
-            _modManagerService.DisableMod(workshopPath, modVm.PublishedFileId);
-        else
-            _modManagerService.EnableMod(workshopPath, modVm.PublishedFileId);
-
+        _modManagerService.RemoveMods(workshopPath, [modVm.PublishedFileId]);
         Refresh();
+        _mainVm.StatusMessage = $"Removed mod '{modVm.Title}'";
     }
 
     [RelayCommand]
-    private void EnableAll()
+    private void RemoveAll()
     {
         var workshopPath = _mainVm.Settings.WorkshopFolderPath;
         if (string.IsNullOrEmpty(workshopPath)) return;
 
-        foreach (var mod in Mods.Where(m => !m.IsEnabled))
-        {
-            _modManagerService.EnableMod(workshopPath, mod.PublishedFileId);
-        }
-
+        var count = _modManagerService.RemoveAllMods(workshopPath);
         Refresh();
-    }
-
-    [RelayCommand]
-    private void DisableAll()
-    {
-        var workshopPath = _mainVm.Settings.WorkshopFolderPath;
-        if (string.IsNullOrEmpty(workshopPath)) return;
-
-        _modManagerService.DisableAllMods(workshopPath);
-        Refresh();
-        _mainVm.StatusMessage = "All mods disabled";
+        _mainVm.StatusMessage = $"Removed {count} mods from workshop";
     }
 
     [RelayCommand]
@@ -92,25 +75,26 @@ public partial class InstalledModsViewModel : ObservableObject
             return;
         }
 
-        var enabledMods = Mods
-            .Where(m => m.IsEnabled)
-            .Select(m => new InstalledMod
-            {
-                PublishedFileId = m.PublishedFileId,
-                Title = m.Title,
-                IsEnabled = true
-            });
+        var workshopPath = _mainVm.Settings.WorkshopFolderPath;
+        if (string.IsNullOrEmpty(workshopPath)) return;
 
-        var profile = _profileService.CreateProfileFromMods(
+        var installedMods = Mods.Select(m => new InstalledMod
+        {
+            PublishedFileId = m.PublishedFileId,
+            Title = m.Title,
+            IsEnabled = true
+        });
+
+        var profile = await _profileService.CreateProfileFromModsAsync(
             SaveProfileName,
             SaveProfileDescription,
-            enabledMods);
-
-        await _profileService.SaveProfileAsync(profile);
+            workshopPath,
+            _modManagerService,
+            installedMods);
 
         SaveProfileName = string.Empty;
         SaveProfileDescription = string.Empty;
-        _mainVm.StatusMessage = $"Profile '{profile.Name}' saved with {profile.Mods.Count} mods";
+        _mainVm.StatusMessage = $"Profile '{profile.Name}' saved with {profile.Mods.Count} mods (files backed up)";
     }
 }
 

@@ -12,6 +12,9 @@
         <!-- StringToVisibility: collapses when string is null or empty -->
         <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
 
+        <!-- Cached image loading from disk -->
+        <converters:CachedImageConverter x:Key="CachedImageConverter" />
+
         <!-- Nav Button Style -->
         <Style x:Key="NavButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />

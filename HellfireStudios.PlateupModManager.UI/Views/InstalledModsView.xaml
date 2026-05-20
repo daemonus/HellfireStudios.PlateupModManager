@@ -12,9 +12,7 @@
 
         <!-- Action Bar -->
         <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,16">
-            <Button Content="Enable All" Command="{Binding EnableAllCommand}"
-                    Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" />
-            <Button Content="Disable All" Command="{Binding DisableAllCommand}"
+            <Button Content="🗑 Remove All" Command="{Binding RemoveAllCommand}"
                     Style="{StaticResource DangerButtonStyle}" Margin="0,0,8,0" />
             <Button Content="↻ Refresh" Command="{Binding RefreshCommand}"
                     Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" />
@@ -55,20 +53,9 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <!-- Enabled indicator -->
+                            <!-- Active indicator -->
                             <Ellipse Grid.Column="0" Width="12" Height="12" Margin="0,0,12,0"
-                                     VerticalAlignment="Center">
-                                <Ellipse.Style>
-                                    <Style TargetType="Ellipse">
-                                        <Setter Property="Fill" Value="#f38ba8" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsEnabled}" Value="True">
-                                                <Setter Property="Fill" Value="#a6e3a1" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Ellipse.Style>
-                            </Ellipse>
+                                     VerticalAlignment="Center" Fill="#a6e3a1" />
 
                             <!-- Mod info -->
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -78,21 +65,11 @@
                                            FontSize="11" Foreground="#6c7086" Margin="0,2,0,0" />
                             </StackPanel>
 
-                            <!-- Toggle button -->
-                            <Button Grid.Column="2" VerticalAlignment="Center"
-                                    Command="{Binding DataContext.ToggleModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommandParameter="{Binding}">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
-                                        <Setter Property="Content" Value="Enable" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsEnabled}" Value="True">
-                                                <Setter Property="Content" Value="Disable" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                            <!-- Remove button -->
+                            <Button Grid.Column="2" Content="🗑 Remove" VerticalAlignment="Center"
+                                    Command="{Binding DataContext.RemoveModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource DangerButtonStyle}" FontSize="12" />
                         </Grid>
                     </Border>
                 </DataTemplate>

@@ -2,8 +2,6 @@ namespace HellfireStudios.PlateupModManager.Services;
 
 public class ModManagerService
 {
-    private const string DisabledSuffix = ".disabled";
-
     /// <summary>
     /// Gets the workshop content folder for PlateUp! mods.
     /// Typically: {SteamLibrary}/steamapps/workshop/content/1599600/
@@ -15,7 +13,7 @@ public class ModManagerService
     }
 
     /// <summary>
-    /// Lists all installed mod folder IDs (both enabled and disabled).
+    /// Lists all mod folders currently present in the workshop content directory.
     /// </summary>
     public List<InstalledMod> GetInstalledMods(string workshopContentPath)
     {
@@ -27,85 +25,133 @@ public class ModManagerService
         foreach (var dir in Directory.GetDirectories(workshopContentPath))
         {
             var folderName = Path.GetFileName(dir);
-            var isDisabled = folderName.EndsWith(DisabledSuffix);
-            var modId = isDisabled ? folderName[..^DisabledSuffix.Length] : folderName;
-
             mods.Add(new InstalledMod
             {
-                PublishedFileId = modId,
+                PublishedFileId = folderName,
                 FolderPath = dir,
-                IsEnabled = !isDisabled
+                IsEnabled = true
             });
         }
 
         return mods;
     }
 
+    // ── Backup ────────────────────────────────────────────────────────
+
     /// <summary>
-    /// Enables a mod by removing the .disabled suffix from its folder.
+    /// Copies mod folders from the workshop into a profile backup directory.
+    /// Preserves the full folder structure: backupDir/{modId}/*
     /// </summary>
-    public bool EnableMod(string workshopContentPath, string publishedFileId)
+    public void BackupMods(string workshopContentPath, string backupDir, IEnumerable<string> modIds)
     {
-        var disabledPath = Path.Combine(workshopContentPath, publishedFileId + DisabledSuffix);
-        var enabledPath = Path.Combine(workshopContentPath, publishedFileId);
+        Directory.CreateDirectory(backupDir);
 
-        if (Directory.Exists(disabledPath))
+        foreach (var modId in modIds)
         {
-            Directory.Move(disabledPath, enabledPath);
-            return true;
-        }
+            var sourcePath = Path.Combine(workshopContentPath, modId);
+            var destPath = Path.Combine(backupDir, modId);
 
-        return Directory.Exists(enabledPath);
+            if (Directory.Exists(sourcePath))
+            {
+                CopyDirectoryRecursive(sourcePath, destPath);
+            }
+        }
     }
 
-    /// <summary>
-    /// Disables a mod by appending .disabled to its folder name.
-    /// </summary>
-    public bool DisableMod(string workshopContentPath, string publishedFileId)
-    {
-        var enabledPath = Path.Combine(workshopContentPath, publishedFileId);
-        var disabledPath = Path.Combine(workshopContentPath, publishedFileId + DisabledSuffix);
-
-        if (Directory.Exists(enabledPath))
-        {
-            Directory.Move(enabledPath, disabledPath);
-            return true;
-        }
-
-        return Directory.Exists(disabledPath);
-    }
+    // ── Remove from Workshop ─────────────────────────────────────────
 
     /// <summary>
-    /// Disables all mods in the workshop content folder.
+    /// Deletes specific mod folders from the workshop content directory.
     /// </summary>
-    public int DisableAllMods(string workshopContentPath)
+    public int RemoveMods(string workshopContentPath, IEnumerable<string> modIds)
     {
         var count = 0;
-        var mods = GetInstalledMods(workshopContentPath);
-
-        foreach (var mod in mods.Where(m => m.IsEnabled))
+        foreach (var modId in modIds)
         {
-            if (DisableMod(workshopContentPath, mod.PublishedFileId))
+            var modPath = Path.Combine(workshopContentPath, modId);
+            if (Directory.Exists(modPath))
+            {
+                Directory.Delete(modPath, recursive: true);
                 count++;
+            }
+        }
+        return count;
+    }
+
+    /// <summary>
+    /// Deletes ALL mod folders from the workshop content directory.
+    /// </summary>
+    public int RemoveAllMods(string workshopContentPath)
+    {
+        if (!Directory.Exists(workshopContentPath))
+            return 0;
+
+        var dirs = Directory.GetDirectories(workshopContentPath);
+        foreach (var dir in dirs)
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+        return dirs.Length;
+    }
+
+    // ── Restore from Backup ──────────────────────────────────────────
+
+    /// <summary>
+    /// Copies mod folders from a profile backup back into the workshop content directory.
+    /// </summary>
+    public int RestoreMods(string workshopContentPath, string backupDir, IEnumerable<string>? modIds = null)
+    {
+        if (!Directory.Exists(backupDir))
+            return 0;
+
+        var count = 0;
+        var dirsToRestore = modIds != null
+            ? modIds.Select(id => Path.Combine(backupDir, id)).Where(Directory.Exists)
+            : Directory.GetDirectories(backupDir);
+
+        foreach (var sourceDir in dirsToRestore)
+        {
+            var modId = Path.GetFileName(sourceDir);
+            var destPath = Path.Combine(workshopContentPath, modId);
+
+            // Remove existing if present, then copy fresh from backup
+            if (Directory.Exists(destPath))
+                Directory.Delete(destPath, recursive: true);
+
+            CopyDirectoryRecursive(sourceDir, destPath);
+            count++;
         }
 
         return count;
     }
 
-    /// <summary>
-    /// Enables only the mods in the given list, disables all others.
-    /// </summary>
-    public void ApplyModSet(string workshopContentPath, IEnumerable<string> modIdsToEnable)
-    {
-        var enableSet = new HashSet<string>(modIdsToEnable);
-        var installed = GetInstalledMods(workshopContentPath);
+    // ── Apply Profile ────────────────────────────────────────────────
 
-        foreach (var mod in installed)
+    /// <summary>
+    /// Applies a profile: removes all mods from workshop, then restores only the profile's mods from backup.
+    /// </summary>
+    public int ApplyProfile(string workshopContentPath, string backupDir)
+    {
+        RemoveAllMods(workshopContentPath);
+        return RestoreMods(workshopContentPath, backupDir);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────
+
+    private static void CopyDirectoryRecursive(string sourceDir, string destDir)
+    {
+        Directory.CreateDirectory(destDir);
+
+        foreach (var file in Directory.GetFiles(sourceDir))
         {
-            if (enableSet.Contains(mod.PublishedFileId))
-                EnableMod(workshopContentPath, mod.PublishedFileId);
-            else
-                DisableMod(workshopContentPath, mod.PublishedFileId);
+            var destFile = Path.Combine(destDir, Path.GetFileName(file));
+            File.Copy(file, destFile, overwrite: true);
+        }
+
+        foreach (var subDir in Directory.GetDirectories(sourceDir))
+        {
+            var destSubDir = Path.Combine(destDir, Path.GetFileName(subDir));
+            CopyDirectoryRecursive(subDir, destSubDir);
         }
     }
 }

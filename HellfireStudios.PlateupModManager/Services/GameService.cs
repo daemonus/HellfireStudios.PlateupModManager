@@ -195,16 +195,16 @@ public class GameService
     /// <summary>
     /// Executes the full speed run mode workflow:
     /// 1. Close game if running
-    /// 2. Apply the mod profile
+    /// 2. Restore profile mods from backup into workshop
     /// 3. Launch game
     /// 4. Wait for game to exit
-    /// 5. Disable all mods
+    /// 5. Remove all mods from workshop
     /// 6. Relaunch game clean
     /// </summary>
     public async Task RunSpeedRunModeAsync(
         string workshopContentPath,
+        string profileBackupDir,
         ModManagerService modManager,
-        IEnumerable<string> profileModIds,
         IProgress<string>? progress = null,
         CancellationToken cancellationToken = default)
     {
@@ -216,9 +216,9 @@ public class GameService
             await Task.Delay(2000, cancellationToken);
         }
 
-        // Step 2: Apply the profile mods
-        progress?.Report("Enabling profile mods...");
-        modManager.ApplyModSet(workshopContentPath, profileModIds);
+        // Step 2: Apply profile — clear workshop, restore from backup
+        progress?.Report("Restoring profile mods...");
+        modManager.ApplyProfile(workshopContentPath, profileBackupDir);
 
         // Step 3: Launch game
         progress?.Report("Launching PlateUp! with mods...");
@@ -228,9 +228,9 @@ public class GameService
         progress?.Report("Waiting for PlateUp! to close...");
         await WaitForGameToExitAsync(cancellationToken);
 
-        // Step 5: Disable all mods
-        progress?.Report("Disabling all mods...");
-        modManager.DisableAllMods(workshopContentPath);
+        // Step 5: Remove all mods from workshop
+        progress?.Report("Removing all mods...");
+        modManager.RemoveAllMods(workshopContentPath);
 
         // Step 6: Relaunch clean
         progress?.Report("Relaunching PlateUp! without mods...");

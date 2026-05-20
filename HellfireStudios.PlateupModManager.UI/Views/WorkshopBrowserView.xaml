@@ -71,7 +71,7 @@
                             <!-- Thumbnail -->
                             <Border Grid.Column="0" Width="64" Height="64" CornerRadius="6"
                                     Background="#45475a" ClipToBounds="True">
-                                <Image Source="{Binding PreviewUrl}" Stretch="UniformToFill" />
+                                <Image Source="{Binding PreviewUrl, Converter={StaticResource CachedImageConverter}}" Stretch="UniformToFill" />
                             </Border>
 
                             <!-- Info -->
