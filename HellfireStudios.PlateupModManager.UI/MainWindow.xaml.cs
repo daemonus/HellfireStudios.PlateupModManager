@@ -1,6 +1,4 @@
-using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Interop;
 using HellfireStudios.PlateupModManager.UI.ViewModels;
 
 namespace HellfireStudios.PlateupModManager.UI;
@@ -22,36 +20,25 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        ApplyDarkTitleBar();
         await _viewModel.InitializeAsync();
     }
 
-    // ── Dark Title Bar ──────────────────────────────────────────────────
+    // ── Custom Title Bar Controls ───────────────────────────────────────
 
-    [DllImport("dwmapi.dll", PreserveSig = true)]
-    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
-
-    private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
-    private const int DWMWA_CAPTION_COLOR = 35;
-
-    private void ApplyDarkTitleBar()
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            var hwnd = new WindowInteropHelper(this).Handle;
-            if (hwnd == IntPtr.Zero) return;
+        WindowState = WindowState.Minimized;
+    }
 
-            // Enable dark mode for title bar buttons (close/min/max)
-            var darkMode = 1;
-            DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref darkMode, sizeof(int));
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+    }
 
-            // Set title bar background color to match app theme (#1e1e2e → BGR: 0x2E1E1E)
-            var captionColor = 0x2E1E1E; // BGR format: B=0x2E, G=0x1E, R=0x1E
-            DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, ref captionColor, sizeof(int));
-        }
-        catch
-        {
-            // Silently ignore on older Windows versions that don't support these attributes
-        }
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
     }
 }

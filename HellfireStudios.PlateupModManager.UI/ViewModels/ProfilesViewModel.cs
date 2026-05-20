@@ -185,10 +185,10 @@ public partial class ProfilesViewModel : ObservableObject
             _mainVm.StatusMessage = "[Speed Run] Subscribing to profile mods...";
             await _steamSessionService.SubscribeManyAsync(profileModIds);
 
-            // Step 3: Launch game
+            // Step 3: Launch game directly via exe
             SpeedRunStatus = "Launching PlateUp! with mods...";
             _mainVm.StatusMessage = "[Speed Run] Launching PlateUp! with mods...";
-            _gameService.LaunchGame();
+            _gameService.LaunchGameExe(_mainVm.Settings.GameFolderPath);
 
             // Step 4: Wait for game to exit
             SpeedRunStatus = "Waiting for PlateUp! to close...";
@@ -200,11 +200,11 @@ public partial class ProfilesViewModel : ObservableObject
             _mainVm.StatusMessage = "[Speed Run] Unsubscribing from mods...";
             await _steamSessionService.UnsubscribeManyAsync(profileModIds);
 
-            // Step 6: Relaunch clean
+            // Step 6: Relaunch clean directly via exe
             SpeedRunStatus = "Relaunching PlateUp! without mods...";
             _mainVm.StatusMessage = "[Speed Run] Relaunching PlateUp! without mods...";
             await Task.Delay(1000, _speedRunCts.Token);
-            _gameService.LaunchGame();
+            _gameService.LaunchGameExe(_mainVm.Settings.GameFolderPath);
 
             SpeedRunStatus = "Speed run mode complete!";
             _mainVm.StatusMessage = "[Speed Run] Complete!";
@@ -241,6 +241,7 @@ public partial class ProfileItemViewModel : ObservableObject
     public string Name => Profile.Name;
     public string Description => Profile.Description;
     public bool IsSpeedRunProfile => Profile.IsSpeedRunProfile;
+    public bool IsDefault => Profile.IsDefault;
     public int ModCount => Profile.Mods.Count;
     public string ModSummary => $"{ModCount} mod{(ModCount == 1 ? "" : "s")}";
     public string UpdatedAt => Profile.UpdatedAt.ToLocalTime().ToString("g");

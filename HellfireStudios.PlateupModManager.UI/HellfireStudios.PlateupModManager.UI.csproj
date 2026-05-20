@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UseWPF>true</UseWPF>
+        <ApplicationIcon>..\img\app-icon.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,6 +21,8 @@
     <ItemGroup>
         <Resource Include="..\img\hellfire-studios.png" Link="Images\hellfire-studios.png" />
         <Resource Include="..\img\plateup-logo.png" Link="Images\plateup-logo.png" />
+        <Resource Include="..\img\logo.png" Link="Images\logo.png" />
+        <Resource Include="..\img\app-icon.ico" Link="Images\app-icon.ico" />
     </ItemGroup>
 
 </Project>

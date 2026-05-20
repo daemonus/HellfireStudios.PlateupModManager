@@ -144,6 +144,32 @@ public class GameService
     }
 
     /// <summary>
+    /// Launches PlateUp! directly via its executable.
+    /// Falls back to Steam protocol if the exe is not found.
+    /// </summary>
+    public void LaunchGameExe(string? gameFolderPath = null)
+    {
+        gameFolderPath ??= FindGameFolder();
+        if (gameFolderPath != null)
+        {
+            var exePath = Path.Combine(gameFolderPath, "PlateUp.exe");
+            if (File.Exists(exePath))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = exePath,
+                    WorkingDirectory = gameFolderPath,
+                    UseShellExecute = true
+                });
+                return;
+            }
+        }
+
+        // Fallback to Steam protocol
+        LaunchGame();
+    }
+
+    /// <summary>
     /// Closes PlateUp! if it is running.
     /// </summary>
     public bool CloseGame()

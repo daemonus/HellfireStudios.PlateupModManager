@@ -11,6 +11,7 @@
 
         <!-- StringToVisibility: collapses when string is null or empty -->
         <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+        <converters:InverseStringToVisibilityConverter x:Key="InverseStringToVisibilityConverter" />
 
         <!-- Cached image loading from disk -->
         <converters:CachedImageConverter x:Key="CachedImageConverter" />

@@ -10,7 +10,14 @@
         Title="PlateUp! Mod Manager" Height="700" Width="1050"
         WindowStartupLocation="CenterScreen"
         Background="#1e1e2e"
-        Icon="/Images/plateup-logo.png">
+        Icon="/Images/app-icon.ico"
+        WindowStyle="None"
+        ResizeMode="CanResizeWithGrip">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="36" ResizeBorderThickness="6"
+                      GlassFrameThickness="0" CornerRadius="0" />
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:WorkshopBrowserViewModel}">
@@ -25,94 +32,148 @@
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
             <views:SettingsView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:SteamLoginViewModel}">
-            <views:SteamLoginView />
-        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:AboutViewModel}">
             <views:AboutView />
         </DataTemplate>
+
+        <!-- Window control button style -->
+        <Style x:Key="WindowControlButton" TargetType="Button">
+            <Setter Property="Width" Value="46" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#a6adc8" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#313244" />
+                                <Setter Property="Foreground" Value="#cdd6f4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#e64553" />
+                                <Setter Property="Foreground" Value="#ffffff" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <Border BorderBrush="#313244" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="36" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <!-- Sidebar -->
-        <Border Grid.Column="0" Grid.RowSpan="2" Background="#181825" BorderBrush="#313244" BorderThickness="0,0,1,0">
-            <DockPanel>
-                <!-- App Title -->
-                <StackPanel DockPanel.Dock="Top" Margin="16,20,16,24">
-                    <TextBlock Text="🍽️ PlateUp!" FontSize="22" FontWeight="Bold" Foreground="#cdd6f4" />
-                    <TextBlock Text="Mod Manager" FontSize="13" Foreground="#a6adc8" Margin="0,2,0,0" />
-                </StackPanel>
-
-                <!-- Game Status -->
-                <Border DockPanel.Dock="Top" Background="#11111b" CornerRadius="8" Padding="12,8" Margin="12,0,12,16">
-                    <StackPanel Orientation="Horizontal">
-                        <Ellipse Width="10" Height="10" Margin="0,0,8,0">
-                            <Ellipse.Style>
-                                <Style TargetType="Ellipse">
-                                    <Setter Property="Fill" Value="#f38ba8" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsGameRunning}" Value="True">
-                                            <Setter Property="Fill" Value="#a6e3a1" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Ellipse.Style>
-                        </Ellipse>
-                        <TextBlock Foreground="#bac2de" FontSize="12">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="Game Not Running" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsGameRunning}" Value="True">
-                                            <Setter Property="Text" Value="Game Running" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+            <!-- Title Bar (right of sidebar only) -->
+            <Border Grid.Row="0" Grid.Column="1" Background="#1e1e2e">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="─" Style="{StaticResource WindowControlButton}" Click="MinimizeButton_Click" />
+                        <Button Content="□" Style="{StaticResource WindowControlButton}" Click="MaximizeButton_Click" />
+                        <Button Content="✕" Style="{StaticResource CloseButton}" Click="CloseButton_Click" />
                     </StackPanel>
-                </Border>
+                    <Border />
+                </DockPanel>
+            </Border>
 
-                <!-- Navigation Buttons -->
-                <StackPanel DockPanel.Dock="Top" Margin="8,0">
-                    <Button Content="📦  Installed Mods" Command="{Binding NavigateToInstalledCommand}"
-                            Style="{StaticResource NavButtonStyle}" />
-                    <Button Content="🔍  Workshop Browser" Command="{Binding NavigateToWorkshopCommand}"
-                            Style="{StaticResource NavButtonStyle}" />
-                    <Button Content="📋  Profiles" Command="{Binding NavigateToProfilesCommand}"
-                            Style="{StaticResource NavButtonStyle}" />
-                    <Button Content="🔑  Steam Account" Command="{Binding NavigateToSteamLoginCommand}"
-                            Style="{StaticResource NavButtonStyle}" />
-                    <Button Content="⚙️  Settings" Command="{Binding NavigateToSettingsCommand}"
-                            Style="{StaticResource NavButtonStyle}" />
-                </StackPanel>
+            <!-- Sidebar -->
+            <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="3" Background="#181825" BorderBrush="#313244" BorderThickness="0,0,1,0">
+                <DockPanel>
+                    <!-- App Title -->
+                    <StackPanel DockPanel.Dock="Top" Margin="16,16,16,24">
+                        <TextBlock Text="🍽️ PlateUp!" FontSize="22" FontWeight="Bold" Foreground="#cdd6f4" />
+                        <TextBlock Text="Mod Manager" FontSize="13" Foreground="#a6adc8" Margin="0,2,0,0" />
+                    </StackPanel>
 
-                <!-- Bottom nav -->
-                <StackPanel DockPanel.Dock="Bottom" Margin="8,0,8,12">
-                    <Button Content="ℹ️  About" Command="{Binding NavigateToAboutCommand}"
-                            Style="{StaticResource NavButtonStyle}" />
-                </StackPanel>
-            </DockPanel>
-        </Border>
+                    <!-- Game Status -->
+                    <Border DockPanel.Dock="Top" Background="#11111b" CornerRadius="8" Padding="12,8" Margin="12,0,12,16">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="10" Height="10" Margin="0,0,8,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="#f38ba8" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsGameRunning}" Value="True">
+                                                <Setter Property="Fill" Value="#a6e3a1" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock Foreground="#bac2de" FontSize="12">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Game Not Running" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsGameRunning}" Value="True">
+                                                <Setter Property="Text" Value="Game Running" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
 
-        <!-- Main Content Area -->
-        <ContentControl Grid.Column="1" Grid.Row="0"
-                        Content="{Binding CurrentView}"
-                        Margin="0" />
+                    <!-- Navigation Buttons -->
+                    <StackPanel DockPanel.Dock="Top" Margin="8,0">
+                        <Button Content="📦  Installed Mods" Command="{Binding NavigateToInstalledCommand}"
+                                Style="{StaticResource NavButtonStyle}" />
+                        <Button Content="🔍  Workshop Browser" Command="{Binding NavigateToWorkshopCommand}"
+                                Style="{StaticResource NavButtonStyle}" />
+                        <Button Content="📋  Profiles" Command="{Binding NavigateToProfilesCommand}"
+                                Style="{StaticResource NavButtonStyle}" />
+                        <Button Content="⚙️  Settings" Command="{Binding NavigateToSettingsCommand}"
+                                Style="{StaticResource NavButtonStyle}" />
+                    </StackPanel>
 
-        <!-- Status Bar -->
-        <Border Grid.Column="1" Grid.Row="1" Background="#181825" BorderBrush="#313244" BorderThickness="0,1,0,0"
-                Padding="16,8">
-            <TextBlock Text="{Binding StatusMessage}" Foreground="#a6adc8" FontSize="12" />
-        </Border>
-    </Grid>
+                    <!-- Bottom nav -->
+                    <StackPanel DockPanel.Dock="Bottom" Margin="8,0,8,12">
+                        <Button Content="ℹ️  About" Command="{Binding NavigateToAboutCommand}"
+                                Style="{StaticResource NavButtonStyle}" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Main Content Area -->
+            <ContentControl Grid.Column="1" Grid.Row="1"
+                            Content="{Binding CurrentView}"
+                            Margin="0" />
+
+            <!-- Status Bar -->
+            <Border Grid.Column="1" Grid.Row="2" Background="#181825" BorderBrush="#313244" BorderThickness="0,1,0,0"
+                    Padding="16,8">
+                <TextBlock Text="{Binding StatusMessage}" Foreground="#a6adc8" FontSize="12" />
+            </Border>
+        </Grid>
+    </Border>
 </Window>

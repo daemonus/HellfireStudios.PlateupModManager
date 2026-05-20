@@ -19,9 +19,14 @@
             <Button DockPanel.Dock="Right" Content="✕ Clear" Command="{Binding ClearSearchCommand}"
                     Style="{StaticResource SecondaryButtonStyle}" Margin="8,0,0,0"
                     Visibility="{Binding SearchText, Converter={StaticResource StringToVisibilityConverter}}" />
-            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                     Style="{StaticResource DarkTextBoxStyle}"
-                     FontSize="14" Padding="10,8" />
+            <Grid>
+                <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource DarkTextBoxStyle}"
+                         FontSize="14" Padding="10,8" />
+                <TextBlock Text="Start typing to search workshop items"
+                           FontSize="14" Foreground="#6c7086" Padding="12,9" IsHitTestVisible="False"
+                           Visibility="{Binding Text, ElementName=SearchBox, Converter={StaticResource InverseStringToVisibilityConverter}}" />
+            </Grid>
         </DockPanel>
 
         <!-- Error Message -->

@@ -10,12 +10,12 @@
                     Margin="40,60" MaxWidth="500">
 
             <!-- Logo -->
-            <Border HorizontalAlignment="Center" Margin="0,0,0,32">
+            <Border HorizontalAlignment="Center" Margin="0,0,0,10">
                 <Image Source="/Images/plateup-logo.png" Width="200" RenderOptions.BitmapScalingMode="HighQuality" />
             </Border>
 
             <!-- App Name -->
-            <TextBlock Text="PlateUp Mod Manager" FontSize="28" FontWeight="Bold"
+            <TextBlock Text="Mod Manager" FontSize="28" FontWeight="Bold"
                        Foreground="#cdd6f4" HorizontalAlignment="Center" Margin="0,0,0,8" />
 
             <TextBlock Text="Subscribe, manage, and organise your PlateUp! Workshop mods"
@@ -34,7 +34,7 @@
             <TextBlock HorizontalAlignment="Center" Foreground="#a6adc8" FontSize="13"
                        TextAlignment="Center" Margin="0,0,0,8">
                 <TextBlock.Text>
-                    <MultiBinding StringFormat="© {0} Budditec Studios. All rights reserved.">
+                    <MultiBinding StringFormat="© {0} Budditec All rights reserved.">
                         <Binding Path="CopyrightYear" />
                     </MultiBinding>
                 </TextBlock.Text>
@@ -43,6 +43,14 @@
             <TextBlock Text="Built with ❤️ for the PlateUp! community"
                        FontSize="12" Foreground="#6c7086" HorizontalAlignment="Center"
                        Margin="0,8,0,0" />
+
+            <TextBlock HorizontalAlignment="Center" Margin="0,16,0,0">
+                <Hyperlink NavigateUri="https://github.com/daemonus/HellfireStudios.PlateupModManager"
+                           RequestNavigate="Hyperlink_RequestNavigate"
+                           Foreground="#89b4fa" FontSize="12">
+                    github.com/daemonus/HellfireStudios.PlateupModManager
+                </Hyperlink>
+            </TextBlock>
 
         </StackPanel>
     </ScrollViewer>

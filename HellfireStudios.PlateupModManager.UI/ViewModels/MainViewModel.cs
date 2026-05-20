@@ -50,8 +50,9 @@ public partial class MainViewModel : ObservableObject
         WorkshopBrowserVm = new WorkshopBrowserViewModel(_workshopService, _steamSessionService, this);
         InstalledModsVm = new InstalledModsViewModel(_modManagerService, _steamSessionService, _profileService, this);
         ProfilesVm = new ProfilesViewModel(_profileService, _modManagerService, _steamSessionService, _gameService, this);
-        SettingsVm = new SettingsViewModel(_gameService, _profileService, this);
         SteamLoginVm = new SteamLoginViewModel(_steamSessionService, this);
+        SettingsVm = new SettingsViewModel(_gameService, _profileService, this);
+        SettingsVm.SteamLoginVm = SteamLoginVm;
         AboutVm = new AboutViewModel();
 
         CurrentView = InstalledModsVm;
@@ -129,12 +130,6 @@ public partial class MainViewModel : ObservableObject
     private void NavigateToSettings()
     {
         CurrentView = SettingsVm;
-    }
-
-    [RelayCommand]
-    private void NavigateToSteamLogin()
-    {
-        CurrentView = SteamLoginVm;
     }
 
     [RelayCommand]

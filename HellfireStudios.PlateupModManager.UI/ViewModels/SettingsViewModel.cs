@@ -21,6 +21,8 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _workshopFolderPath = string.Empty;
 
+    public SteamLoginViewModel SteamLoginVm { get; set; } = null!;
+
     public SettingsViewModel(GameService gameService, ProfileService profileService, MainViewModel mainVm)
     {
         _gameService = gameService;

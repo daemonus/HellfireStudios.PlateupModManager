@@ -3,8 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+             xmlns:converters="clr-namespace:HellfireStudios.PlateupModManager.UI.Converters"
              mc:Ignorable="d"
              Background="#1e1e2e">
+    <UserControl.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="24,20" MaxWidth="700" HorizontalAlignment="Left">
             <!-- Header -->
@@ -45,7 +51,38 @@
             <!-- Save Button -->
             <Button Content="💾 Save Settings" Command="{Binding SaveSettingsCommand}"
                     Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Left"
-                    FontSize="14" Padding="24,10" />
+                    FontSize="14" Padding="24,10" Margin="0,0,0,24" />
+
+            <!-- Steam Account Section -->
+            <TextBlock Text="Steam Account" FontSize="20" FontWeight="Bold"
+                       Foreground="#cdd6f4" Margin="0,0,0,8" />
+            <TextBlock Text="{Binding SteamLoginVm.StatusText}" FontSize="13"
+                       Foreground="#a6adc8" Margin="0,0,0,16" TextWrapping="Wrap" />
+
+            <!-- Logged-in state -->
+            <Border Visibility="{Binding SteamLoginVm.IsLoggedIn, Converter={StaticResource BoolToVis}}"
+                    Background="#313244" CornerRadius="8" Padding="20,16" Margin="0,0,0,16">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Ellipse Width="12" Height="12" Fill="#a6e3a1" Margin="0,0,10,0" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SteamLoginVm.DisplayName, StringFormat='Signed in as: {0}'}"
+                                   FontSize="15" FontWeight="SemiBold" Foreground="#cdd6f4" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding SteamLoginVm.SteamId, StringFormat='Steam ID: {0}'}"
+                               FontSize="12" Foreground="#6c7086" Margin="0,0,0,12" />
+                    <Button Content="🚪 Sign Out" Command="{Binding SteamLoginVm.LogoutCommand}"
+                            Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+
+            <!-- Login browser (only shown when not logged in) -->
+            <Border Visibility="{Binding SteamLoginVm.IsLoggedIn, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
+                    Background="#313244" CornerRadius="8" Padding="4" Margin="0,0,0,16"
+                    Height="500">
+                <wv2:WebView2 x:Name="LoginWebView"
+                              Source="https://steamcommunity.com/login/home/"
+                              NavigationCompleted="LoginWebView_NavigationCompleted" />
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

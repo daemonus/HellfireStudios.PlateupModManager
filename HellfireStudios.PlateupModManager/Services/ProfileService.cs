@@ -122,6 +122,7 @@ public class ProfileService
                 Name = "Speed Run Leaderboard",
                 Description = "Temporarily enables mods to view the speed run leaderboard, then removes them so you can submit times.",
                 IsSpeedRunProfile = true,
+                IsDefault = true,
                 Mods = installed.Select(m => new ProfileMod
                 {
                     PublishedFileId = m.PublishedFileId,
@@ -139,6 +140,7 @@ public class ProfileService
                 Id = CleanProfileId,
                 Name = "Clean (No Mods)",
                 Description = "Unsubscribes from all mods for a vanilla PlateUp! experience.",
+                IsDefault = true,
                 Mods = []
             };
             await SaveProfileAsync(clean);
