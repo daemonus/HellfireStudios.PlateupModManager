@@ -15,4 +15,7 @@ public class ProfileMod
 {
     public string PublishedFileId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string DisplayTitle => string.IsNullOrEmpty(Title) ? PublishedFileId : Title;
 }

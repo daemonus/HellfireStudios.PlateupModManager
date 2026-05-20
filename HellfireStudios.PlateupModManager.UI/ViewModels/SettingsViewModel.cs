@@ -21,9 +21,6 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _workshopFolderPath = string.Empty;
 
-    [ObservableProperty]
-    private string _steamApiKey = string.Empty;
-
     public SettingsViewModel(GameService gameService, ProfileService profileService, MainViewModel mainVm)
     {
         _gameService = gameService;
@@ -36,7 +33,6 @@ public partial class SettingsViewModel : ObservableObject
         GameFolderPath = settings.GameFolderPath ?? string.Empty;
         SteamFolderPath = settings.SteamFolderPath ?? string.Empty;
         WorkshopFolderPath = settings.WorkshopFolderPath ?? string.Empty;
-        SteamApiKey = settings.SteamApiKey ?? string.Empty;
     }
 
     [RelayCommand]
@@ -70,8 +66,6 @@ public partial class SettingsViewModel : ObservableObject
         settings.GameFolderPath = GameFolderPath;
         settings.SteamFolderPath = SteamFolderPath;
         settings.WorkshopFolderPath = WorkshopFolderPath;
-        settings.SteamApiKey = SteamApiKey;
-
         await _profileService.SaveSettingsAsync(settings);
 
         _mainVm.IsConfigured = !string.IsNullOrEmpty(settings.WorkshopFolderPath)

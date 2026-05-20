@@ -12,6 +12,7 @@ public partial class MainViewModel : ObservableObject
     private readonly ModManagerService _modManagerService;
     private readonly ProfileService _profileService;
     private readonly SteamWorkshopService _workshopService;
+    private readonly SteamSessionService _steamSessionService;
 
     [ObservableProperty]
     private object? _currentView;
@@ -28,10 +29,15 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private AppSettings _settings = new();
 
+    [ObservableProperty]
+    private bool _isSteamLoggedIn;
+
     public WorkshopBrowserViewModel WorkshopBrowserVm { get; }
     public InstalledModsViewModel InstalledModsVm { get; }
     public ProfilesViewModel ProfilesVm { get; }
     public SettingsViewModel SettingsVm { get; }
+    public SteamLoginViewModel SteamLoginVm { get; }
+    public AboutViewModel AboutVm { get; }
 
     public MainViewModel()
     {
@@ -39,11 +45,14 @@ public partial class MainViewModel : ObservableObject
         _modManagerService = new ModManagerService();
         _profileService = new ProfileService();
         _workshopService = new SteamWorkshopService();
+        _steamSessionService = new SteamSessionService();
 
-        WorkshopBrowserVm = new WorkshopBrowserViewModel(_workshopService, this);
-        InstalledModsVm = new InstalledModsViewModel(_modManagerService, _profileService, this);
-        ProfilesVm = new ProfilesViewModel(_profileService, _modManagerService, _gameService, this);
+        WorkshopBrowserVm = new WorkshopBrowserViewModel(_workshopService, _steamSessionService, this);
+        InstalledModsVm = new InstalledModsViewModel(_modManagerService, _steamSessionService, _profileService, this);
+        ProfilesVm = new ProfilesViewModel(_profileService, _modManagerService, _steamSessionService, _gameService, this);
         SettingsVm = new SettingsViewModel(_gameService, _profileService, this);
+        SteamLoginVm = new SteamLoginViewModel(_steamSessionService, this);
+        AboutVm = new AboutViewModel();
 
         CurrentView = InstalledModsVm;
     }
@@ -83,10 +92,14 @@ public partial class MainViewModel : ObservableObject
         IsGameRunning = _gameService.IsGameRunning();
         SettingsVm.LoadFrom(Settings);
 
+        // Try to restore a previous Steam session
+        await SteamLoginVm.TryRestoreSessionAsync();
+        IsSteamLoggedIn = _steamSessionService.IsLoggedIn;
+
         if (IsConfigured)
         {
             await _profileService.EnsureDefaultProfilesAsync(Settings.WorkshopFolderPath!, _modManagerService);
-            InstalledModsVm.Refresh();
+            await InstalledModsVm.RefreshAsync();
             await ProfilesVm.LoadProfilesAsync();
         }
     }
@@ -99,10 +112,10 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void NavigateToInstalled()
+    private async Task NavigateToInstalledAsync()
     {
         CurrentView = InstalledModsVm;
-        if (IsConfigured) InstalledModsVm.Refresh();
+        if (IsConfigured) await InstalledModsVm.RefreshAsync();
     }
 
     [RelayCommand]
@@ -116,6 +129,23 @@ public partial class MainViewModel : ObservableObject
     private void NavigateToSettings()
     {
         CurrentView = SettingsVm;
+    }
+
+    [RelayCommand]
+    private void NavigateToSteamLogin()
+    {
+        CurrentView = SteamLoginVm;
+    }
+
+    [RelayCommand]
+    private void NavigateToAbout()
+    {
+        CurrentView = AboutVm;
+    }
+
+    public void OnSteamLoginStateChanged()
+    {
+        IsSteamLoggedIn = _steamSessionService.IsLoggedIn;
     }
 
     public void RefreshGameStatus()

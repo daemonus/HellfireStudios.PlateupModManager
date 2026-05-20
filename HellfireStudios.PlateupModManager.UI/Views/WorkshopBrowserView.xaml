@@ -8,7 +8,7 @@
     <DockPanel Margin="24,20">
         <!-- Header Row -->
         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16">
-            <Button DockPanel.Dock="Right" Content="↻ Reload" Command="{Binding LoadAllModsCommand}"
+            <Button DockPanel.Dock="Right" Content="↻ Reload" Command="{Binding ReloadCommand}"
                     Style="{StaticResource SecondaryButtonStyle}" Margin="8,0,0,0" VerticalAlignment="Center" />
             <TextBlock Text="Workshop Browser" FontSize="24" FontWeight="Bold"
                        Foreground="#cdd6f4" VerticalAlignment="Center" />
@@ -19,7 +19,7 @@
             <Button DockPanel.Dock="Right" Content="✕ Clear" Command="{Binding ClearSearchCommand}"
                     Style="{StaticResource SecondaryButtonStyle}" Margin="8,0,0,0"
                     Visibility="{Binding SearchText, Converter={StaticResource StringToVisibilityConverter}}" />
-            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                      Style="{StaticResource DarkTextBoxStyle}"
                      FontSize="14" Padding="10,8" />
         </DockPanel>
@@ -30,11 +30,9 @@
                    Margin="0,0,0,8" FontSize="13" />
 
         <!-- Loading indicator -->
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal"
-                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Margin="0,0,0,8">
-            <TextBlock Text="{Binding LoadingProgress}" Foreground="#a6adc8" FontSize="14" />
-        </StackPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Loading..." Foreground="#a6adc8" FontSize="14"
+                   Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                   Margin="0,0,0,8" />
 
         <!-- Pagination -->
         <DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
@@ -91,12 +89,12 @@
 
                             <!-- Actions -->
                             <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                <Button Content="Open in Steam"
-                                        Command="{Binding DataContext.OpenInSteamCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                <Button Content="📥 Subscribe"
+                                        Command="{Binding DataContext.SubscribeModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
                                         Style="{StaticResource PrimaryButtonStyle}" FontSize="12" Margin="0,0,0,4" />
-                                <Button Content="View in Browser"
-                                        Command="{Binding DataContext.OpenInBrowserCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                <Button Content="Open in Steam"
+                                        Command="{Binding DataContext.OpenInSteamCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
                                         Style="{StaticResource SecondaryButtonStyle}" FontSize="12" />
                             </StackPanel>

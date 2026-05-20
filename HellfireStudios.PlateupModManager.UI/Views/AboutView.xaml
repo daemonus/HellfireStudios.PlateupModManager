@@ -1,0 +1,49 @@
+<UserControl x:Class="HellfireStudios.PlateupModManager.UI.Views.AboutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="#1e1e2e">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Margin="40,60" MaxWidth="500">
+
+            <!-- Logo -->
+            <Border HorizontalAlignment="Center" Margin="0,0,0,32">
+                <Image Source="/Images/plateup-logo.png" Width="200" RenderOptions.BitmapScalingMode="HighQuality" />
+            </Border>
+
+            <!-- App Name -->
+            <TextBlock Text="PlateUp Mod Manager" FontSize="28" FontWeight="Bold"
+                       Foreground="#cdd6f4" HorizontalAlignment="Center" Margin="0,0,0,8" />
+
+            <TextBlock Text="Subscribe, manage, and organise your PlateUp! Workshop mods"
+                       FontSize="14" Foreground="#a6adc8" HorizontalAlignment="Center"
+                       TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,32" />
+
+            <!-- Divider -->
+            <Border Height="1" Background="#313244" Margin="40,0,40,32" />
+
+            <!-- Studio Logo -->
+            <Border HorizontalAlignment="Center" Margin="0,0,0,16">
+                <Image Source="/Images/hellfire-studios.png" Width="120" RenderOptions.BitmapScalingMode="HighQuality" />
+            </Border>
+
+            <!-- Copyright -->
+            <TextBlock HorizontalAlignment="Center" Foreground="#a6adc8" FontSize="13"
+                       TextAlignment="Center" Margin="0,0,0,8">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="© {0} Budditec Studios. All rights reserved.">
+                        <Binding Path="CopyrightYear" />
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+
+            <TextBlock Text="Built with ❤️ for the PlateUp! community"
+                       FontSize="12" Foreground="#6c7086" HorizontalAlignment="Center"
+                       Margin="0,8,0,0" />
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

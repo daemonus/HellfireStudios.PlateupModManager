@@ -11,6 +11,7 @@ public partial class ProfilesViewModel : ObservableObject
 {
     private readonly ProfileService _profileService;
     private readonly ModManagerService _modManagerService;
+    private readonly SteamSessionService _steamSessionService;
     private readonly GameService _gameService;
     private readonly MainViewModel _mainVm;
 
@@ -27,11 +28,13 @@ public partial class ProfilesViewModel : ObservableObject
     public ProfilesViewModel(
         ProfileService profileService,
         ModManagerService modManagerService,
+        SteamSessionService steamSessionService,
         GameService gameService,
         MainViewModel mainVm)
     {
         _profileService = profileService;
         _modManagerService = modManagerService;
+        _steamSessionService = steamSessionService;
         _gameService = gameService;
         _mainVm = mainVm;
     }
@@ -45,20 +48,84 @@ public partial class ProfilesViewModel : ObservableObject
         {
             Profiles.Add(new ProfileItemViewModel(profile));
         }
+
+        // Resolve missing titles from Steam API
+        var modsNeedingTitles = profiles
+            .SelectMany(p => p.Mods)
+            .Where(m => string.IsNullOrEmpty(m.Title) || m.Title == m.PublishedFileId)
+            .ToList();
+
+        if (modsNeedingTitles.Count > 0)
+        {
+            var ids = modsNeedingTitles.Select(m => m.PublishedFileId).Distinct();
+            var titles = await _modManagerService.ResolveModTitlesAsync(ids);
+
+            var dirty = new HashSet<string>();
+            foreach (var mod in modsNeedingTitles)
+            {
+                if (titles.TryGetValue(mod.PublishedFileId, out var title))
+                {
+                    mod.Title = title;
+                    dirty.Add(mod.PublishedFileId);
+                }
+            }
+
+            // Persist updated titles so we don't need to re-fetch next time
+            if (dirty.Count > 0)
+            {
+                foreach (var profile in profiles)
+                {
+                    if (profile.Mods.Any(m => dirty.Contains(m.PublishedFileId)))
+                        await _profileService.SaveProfileAsync(profile);
+                }
+
+                // Refresh the UI with updated titles
+                Profiles.Clear();
+                foreach (var profile in profiles)
+                {
+                    Profiles.Add(new ProfileItemViewModel(profile));
+                }
+            }
+        }
     }
 
     [RelayCommand]
-    private void ApplyProfile(ProfileItemViewModel? profileVm)
+    private async Task ApplyProfileAsync(ProfileItemViewModel? profileVm)
     {
         if (profileVm == null) return;
+
+        if (!_steamSessionService.IsLoggedIn)
+        {
+            _mainVm.StatusMessage = "Sign in to your Steam account first (🔑 Steam Account)";
+            return;
+        }
 
         var workshopPath = _mainVm.Settings.WorkshopFolderPath;
         if (string.IsNullOrEmpty(workshopPath)) return;
 
-        var backupDir = _profileService.GetProfileBackupPath(profileVm.Profile.Id);
-        var count = _modManagerService.ApplyProfile(workshopPath, backupDir);
-        _mainVm.StatusMessage = $"Applied profile '{profileVm.Name}' ({count} mods restored)";
-        _mainVm.InstalledModsVm.Refresh();
+        var profileModIds = profileVm.Profile.Mods.Select(m => m.PublishedFileId).ToHashSet();
+        var currentModIds = _modManagerService.GetInstalledMods(workshopPath)
+            .Select(m => m.PublishedFileId).ToHashSet();
+
+        var toUnsub = currentModIds.Except(profileModIds).ToList();
+        var toSub = profileModIds.Except(currentModIds).ToList();
+
+        _mainVm.StatusMessage = $"Applying profile '{profileVm.Name}'...";
+
+        if (toUnsub.Count > 0)
+        {
+            _mainVm.StatusMessage = $"Unsubscribing from {toUnsub.Count} mods...";
+            await _steamSessionService.UnsubscribeManyAsync(toUnsub);
+        }
+
+        if (toSub.Count > 0)
+        {
+            _mainVm.StatusMessage = $"Subscribing to {toSub.Count} mods...";
+            await _steamSessionService.SubscribeManyAsync(toSub);
+        }
+
+        _mainVm.StatusMessage = $"Applied profile '{profileVm.Name}' (−{toUnsub.Count} / +{toSub.Count})";
+        await _mainVm.InstalledModsVm.RefreshAsync();
     }
 
     [RelayCommand]
@@ -75,6 +142,12 @@ public partial class ProfilesViewModel : ObservableObject
     private async Task SpeedRunModeAsync(ProfileItemViewModel? profileVm)
     {
         if (profileVm == null) return;
+
+        if (!_steamSessionService.IsLoggedIn)
+        {
+            _mainVm.StatusMessage = "Sign in to your Steam account first (🔑 Steam Account)";
+            return;
+        }
 
         var workshopPath = _mainVm.Settings.WorkshopFolderPath;
         if (string.IsNullOrEmpty(workshopPath)) return;
@@ -94,27 +167,52 @@ public partial class ProfilesViewModel : ObservableObject
 
         IsSpeedRunModeRunning = true;
         _speedRunCts = new CancellationTokenSource();
-
-        var backupDir = _profileService.GetProfileBackupPath(profileVm.Profile.Id);
-        var progress = new Progress<string>(msg =>
-        {
-            SpeedRunStatus = msg;
-            _mainVm.StatusMessage = $"[Speed Run] {msg}";
-        });
+        var profileModIds = profileVm.Profile.Mods.Select(m => m.PublishedFileId).ToList();
 
         try
         {
-            await _gameService.RunSpeedRunModeAsync(
-                workshopPath,
-                backupDir,
-                _modManagerService,
-                progress,
-                _speedRunCts.Token);
+            // Step 1: Close game if running
+            if (_gameService.IsGameRunning())
+            {
+                SpeedRunStatus = "Closing PlateUp!...";
+                _mainVm.StatusMessage = "[Speed Run] Closing PlateUp!...";
+                _gameService.CloseGame();
+                await Task.Delay(2000, _speedRunCts.Token);
+            }
+
+            // Step 2: Subscribe to profile mods
+            SpeedRunStatus = "Subscribing to profile mods...";
+            _mainVm.StatusMessage = "[Speed Run] Subscribing to profile mods...";
+            await _steamSessionService.SubscribeManyAsync(profileModIds);
+
+            // Step 3: Launch game
+            SpeedRunStatus = "Launching PlateUp! with mods...";
+            _mainVm.StatusMessage = "[Speed Run] Launching PlateUp! with mods...";
+            _gameService.LaunchGame();
+
+            // Step 4: Wait for game to exit
+            SpeedRunStatus = "Waiting for PlateUp! to close...";
+            _mainVm.StatusMessage = "[Speed Run] Waiting for PlateUp! to close...";
+            await _gameService.WaitForGameToExitAsync(_speedRunCts.Token);
+
+            // Step 5: Unsubscribe from all profile mods
+            SpeedRunStatus = "Unsubscribing from mods...";
+            _mainVm.StatusMessage = "[Speed Run] Unsubscribing from mods...";
+            await _steamSessionService.UnsubscribeManyAsync(profileModIds);
+
+            // Step 6: Relaunch clean
+            SpeedRunStatus = "Relaunching PlateUp! without mods...";
+            _mainVm.StatusMessage = "[Speed Run] Relaunching PlateUp! without mods...";
+            await Task.Delay(1000, _speedRunCts.Token);
+            _gameService.LaunchGame();
+
+            SpeedRunStatus = "Speed run mode complete!";
+            _mainVm.StatusMessage = "[Speed Run] Complete!";
         }
         catch (OperationCanceledException)
         {
             SpeedRunStatus = "Speed run mode cancelled";
-            _modManagerService.RemoveAllMods(workshopPath);
+            await _steamSessionService.UnsubscribeManyAsync(profileModIds);
         }
         catch (Exception ex)
         {
@@ -146,9 +244,34 @@ public partial class ProfileItemViewModel : ObservableObject
     public int ModCount => Profile.Mods.Count;
     public string ModSummary => $"{ModCount} mod{(ModCount == 1 ? "" : "s")}";
     public string UpdatedAt => Profile.UpdatedAt.ToLocalTime().ToString("g");
+    public string ExpandLabel => IsExpanded ? "▾ Hide Mods" : "▸ Show Mods";
+
+    public List<ProfileMod> Mods => Profile.Mods;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ExpandLabel))]
+    private bool _isExpanded;
 
     public ProfileItemViewModel(ModProfile profile)
     {
         Profile = profile;
+    }
+
+    [RelayCommand]
+    private void ToggleExpand()
+    {
+        IsExpanded = !IsExpanded;
+    }
+
+    [RelayCommand]
+    private static void OpenWorkshopPage(ProfileMod? mod)
+    {
+        if (mod == null) return;
+        var url = $"https://steamcommunity.com/sharedfiles/filedetails/?id={mod.PublishedFileId}";
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = url,
+            UseShellExecute = true
+        });
     }
 }

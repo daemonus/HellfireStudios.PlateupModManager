@@ -8,6 +8,7 @@ namespace HellfireStudios.PlateupModManager.UI.ViewModels;
 public partial class InstalledModsViewModel : ObservableObject
 {
     private readonly ModManagerService _modManagerService;
+    private readonly SteamSessionService _steamSessionService;
     private readonly ProfileService _profileService;
     private readonly MainViewModel _mainVm;
 
@@ -19,15 +20,18 @@ public partial class InstalledModsViewModel : ObservableObject
 
     public ObservableCollection<InstalledModItemViewModel> Mods { get; } = [];
 
-    public InstalledModsViewModel(ModManagerService modManagerService, ProfileService profileService, MainViewModel mainVm)
+    public bool IsSteamLoggedIn => _steamSessionService.IsLoggedIn;
+
+    public InstalledModsViewModel(ModManagerService modManagerService, SteamSessionService steamSessionService, ProfileService profileService, MainViewModel mainVm)
     {
         _modManagerService = modManagerService;
+        _steamSessionService = steamSessionService;
         _profileService = profileService;
         _mainVm = mainVm;
     }
 
     [RelayCommand]
-    public void Refresh()
+    public async Task RefreshAsync()
     {
         var workshopPath = _mainVm.Settings.WorkshopFolderPath;
         if (string.IsNullOrEmpty(workshopPath)) return;
@@ -42,28 +46,56 @@ public partial class InstalledModsViewModel : ObservableObject
         }
 
         _mainVm.StatusMessage = $"{installed.Count} mods in workshop folder";
+
+        // Resolve titles from Steam Web API in the background
+        var titles = await _modManagerService.ResolveModTitlesAsync(
+            installed.Select(m => m.PublishedFileId));
+
+        foreach (var modVm in Mods)
+        {
+            if (titles.TryGetValue(modVm.PublishedFileId, out var title))
+                modVm.Title = title;
+        }
     }
 
     [RelayCommand]
-    private void RemoveMod(InstalledModItemViewModel? modVm)
+    private async Task UnsubscribeModAsync(InstalledModItemViewModel? modVm)
     {
-        var workshopPath = _mainVm.Settings.WorkshopFolderPath;
-        if (string.IsNullOrEmpty(workshopPath) || modVm == null) return;
+        if (modVm == null) return;
 
-        _modManagerService.RemoveMods(workshopPath, [modVm.PublishedFileId]);
-        Refresh();
-        _mainVm.StatusMessage = $"Removed mod '{modVm.Title}'";
+        if (!_steamSessionService.IsLoggedIn)
+        {
+            _mainVm.StatusMessage = "Sign in to your Steam account first (🔑 Steam Account)";
+            return;
+        }
+
+        _mainVm.StatusMessage = $"Unsubscribing from '{modVm.Title}'...";
+        var success = await _steamSessionService.UnsubscribeAsync(modVm.PublishedFileId);
+        if (success)
+        {
+            Mods.Remove(modVm);
+            _mainVm.StatusMessage = $"Unsubscribed from '{modVm.Title}'";
+        }
+        else
+        {
+            _mainVm.StatusMessage = $"Failed to unsubscribe from '{modVm.Title}'. Session may have expired.";
+        }
     }
 
     [RelayCommand]
-    private void RemoveAll()
+    private async Task UnsubscribeAllAsync()
     {
-        var workshopPath = _mainVm.Settings.WorkshopFolderPath;
-        if (string.IsNullOrEmpty(workshopPath)) return;
+        if (!_steamSessionService.IsLoggedIn)
+        {
+            _mainVm.StatusMessage = "Sign in to your Steam account first (🔑 Steam Account)";
+            return;
+        }
 
-        var count = _modManagerService.RemoveAllMods(workshopPath);
-        Refresh();
-        _mainVm.StatusMessage = $"Removed {count} mods from workshop";
+        var modIds = Mods.Select(m => m.PublishedFileId).ToList();
+        _mainVm.StatusMessage = $"Unsubscribing from {modIds.Count} mods...";
+        var count = await _steamSessionService.UnsubscribeManyAsync(modIds);
+        Mods.Clear();
+        _mainVm.StatusMessage = $"Unsubscribed from {count} mods";
     }
 
     [RelayCommand]
@@ -75,26 +107,20 @@ public partial class InstalledModsViewModel : ObservableObject
             return;
         }
 
-        var workshopPath = _mainVm.Settings.WorkshopFolderPath;
-        if (string.IsNullOrEmpty(workshopPath)) return;
-
         var installedMods = Mods.Select(m => new InstalledMod
         {
             PublishedFileId = m.PublishedFileId,
-            Title = m.Title,
-            IsEnabled = true
+            Title = m.Title
         });
 
         var profile = await _profileService.CreateProfileFromModsAsync(
             SaveProfileName,
             SaveProfileDescription,
-            workshopPath,
-            _modManagerService,
             installedMods);
 
         SaveProfileName = string.Empty;
         SaveProfileDescription = string.Empty;
-        _mainVm.StatusMessage = $"Profile '{profile.Name}' saved with {profile.Mods.Count} mods (files backed up)";
+        _mainVm.StatusMessage = $"Profile '{profile.Name}' saved with {profile.Mods.Count} mods";
     }
 }
 
@@ -103,18 +129,14 @@ public partial class InstalledModItemViewModel : ObservableObject
     private readonly InstalledModsViewModel _parent;
 
     public string PublishedFileId { get; }
-    public string Title { get; }
-    public string FolderPath { get; }
 
     [ObservableProperty]
-    private bool _isEnabled;
+    private string _title;
 
     public InstalledModItemViewModel(InstalledMod mod, InstalledModsViewModel parent)
     {
         _parent = parent;
         PublishedFileId = mod.PublishedFileId;
-        Title = string.IsNullOrEmpty(mod.Title) ? mod.PublishedFileId : mod.Title;
-        FolderPath = mod.FolderPath;
-        IsEnabled = mod.IsEnabled;
+        _title = string.IsNullOrEmpty(mod.Title) ? mod.PublishedFileId : mod.Title;
     }
 }

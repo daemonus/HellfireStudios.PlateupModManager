@@ -9,7 +9,8 @@
         mc:Ignorable="d"
         Title="PlateUp! Mod Manager" Height="700" Width="1050"
         WindowStartupLocation="CenterScreen"
-        Background="#1e1e2e">
+        Background="#1e1e2e"
+        Icon="/Images/plateup-logo.png">
 
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:WorkshopBrowserViewModel}">
@@ -23,6 +24,12 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
             <views:SettingsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SteamLoginViewModel}">
+            <views:SteamLoginView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AboutViewModel}">
+            <views:AboutView />
         </DataTemplate>
     </Window.Resources>
 
@@ -83,12 +90,17 @@
                             Style="{StaticResource NavButtonStyle}" />
                     <Button Content="📋  Profiles" Command="{Binding NavigateToProfilesCommand}"
                             Style="{StaticResource NavButtonStyle}" />
+                    <Button Content="🔑  Steam Account" Command="{Binding NavigateToSteamLoginCommand}"
+                            Style="{StaticResource NavButtonStyle}" />
                     <Button Content="⚙️  Settings" Command="{Binding NavigateToSettingsCommand}"
                             Style="{StaticResource NavButtonStyle}" />
                 </StackPanel>
 
-                <!-- Bottom spacer -->
-                <StackPanel DockPanel.Dock="Bottom" />
+                <!-- Bottom nav -->
+                <StackPanel DockPanel.Dock="Bottom" Margin="8,0,8,12">
+                    <Button Content="ℹ️  About" Command="{Binding NavigateToAboutCommand}"
+                            Style="{StaticResource NavButtonStyle}" />
+                </StackPanel>
             </DockPanel>
         </Border>
 

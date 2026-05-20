@@ -11,18 +11,6 @@
             <TextBlock Text="Settings" FontSize="24" FontWeight="Bold"
                        Foreground="#cdd6f4" Margin="0,0,0,24" />
 
-            <!-- Steam API Key -->
-            <Border Background="#313244" CornerRadius="8" Padding="20,16" Margin="0,0,0,16">
-                <StackPanel>
-                    <TextBlock Text="Steam Web API Key" FontSize="15" FontWeight="SemiBold"
-                               Foreground="#cdd6f4" Margin="0,0,0,4" />
-                    <TextBlock Text="Required to browse the Steam Workshop. Get a free key at steamcommunity.com/dev/apikey"
-                               FontSize="12" Foreground="#6c7086" Margin="0,0,0,10" TextWrapping="Wrap" />
-                    <TextBox Text="{Binding SteamApiKey, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource DarkTextBoxStyle}" FontSize="13" Padding="10,8" />
-                </StackPanel>
-            </Border>
-
             <!-- Paths Section -->
             <Border Background="#313244" CornerRadius="8" Padding="20,16" Margin="0,0,0,16">
                 <StackPanel>

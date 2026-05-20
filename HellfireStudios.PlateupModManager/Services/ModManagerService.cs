@@ -1,19 +1,51 @@
+using System.Net.Http;
+using System.Text.Json;
+
 namespace HellfireStudios.PlateupModManager.Services;
 
 public class ModManagerService
 {
-    /// <summary>
-    /// Gets the workshop content folder for PlateUp! mods.
-    /// Typically: {SteamLibrary}/steamapps/workshop/content/1599600/
-    /// </summary>
-    public string? GetWorkshopContentPath(string steamLibraryPath)
+    private static readonly string TitleCachePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "HellfireStudios", "PlateupModManager", "title_cache.json");
+
+    private Dictionary<string, string>? _titleCache;
+
+    private async Task<Dictionary<string, string>> LoadTitleCacheAsync()
     {
-        var workshopPath = Path.Combine(steamLibraryPath, "steamapps", "workshop", "content", "1599600");
-        return Directory.Exists(workshopPath) ? workshopPath : null;
+        if (_titleCache != null) return _titleCache;
+
+        if (File.Exists(TitleCachePath))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(TitleCachePath);
+                _titleCache = JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? [];
+            }
+            catch
+            {
+                _titleCache = [];
+            }
+        }
+        else
+        {
+            _titleCache = [];
+        }
+
+        return _titleCache;
+    }
+
+    private async Task SaveTitleCacheAsync()
+    {
+        if (_titleCache == null) return;
+        Directory.CreateDirectory(Path.GetDirectoryName(TitleCachePath)!);
+        var json = JsonSerializer.Serialize(_titleCache, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(TitleCachePath, json);
     }
 
     /// <summary>
     /// Lists all mod folders currently present in the workshop content directory.
+    /// This is read-only — Steam manages the actual files.
     /// </summary>
     public List<InstalledMod> GetInstalledMods(string workshopContentPath)
     {
@@ -27,139 +59,97 @@ public class ModManagerService
             var folderName = Path.GetFileName(dir);
             mods.Add(new InstalledMod
             {
-                PublishedFileId = folderName,
-                FolderPath = dir,
-                IsEnabled = true
+                PublishedFileId = folderName
             });
         }
 
         return mods;
     }
 
-    // ── Backup ────────────────────────────────────────────────────────
+    // ── Steam Web API ─────────────────────────────────────────────────
+
+    private static readonly HttpClient HttpClient = new();
 
     /// <summary>
-    /// Copies mod folders from the workshop into a profile backup directory.
-    /// Preserves the full folder structure: backupDir/{modId}/*
+    /// Fetches mod titles from the Steam Web API using the public GetPublishedFileDetails endpoint.
+    /// Returns a dictionary mapping workshop file IDs to their titles.
     /// </summary>
-    public void BackupMods(string workshopContentPath, string backupDir, IEnumerable<string> modIds)
+    public async Task<Dictionary<string, string>> ResolveModTitlesAsync(IEnumerable<string> modIds)
     {
-        Directory.CreateDirectory(backupDir);
+        var cache = await LoadTitleCacheAsync();
+        var result = new Dictionary<string, string>();
+        var idList = modIds.ToList();
+        if (idList.Count == 0)
+            return result;
 
-        foreach (var modId in modIds)
+        // Return cached titles and collect uncached IDs
+        var uncached = new List<string>();
+        foreach (var id in idList)
         {
-            var sourcePath = Path.Combine(workshopContentPath, modId);
-            var destPath = Path.Combine(backupDir, modId);
+            if (cache.TryGetValue(id, out var cached))
+                result[id] = cached;
+            else
+                uncached.Add(id);
+        }
 
-            if (Directory.Exists(sourcePath))
+        if (uncached.Count == 0)
+            return result;
+
+        // Fetch uncached titles from Steam API
+        try
+        {
+            var formData = new Dictionary<string, string>
             {
-                CopyDirectoryRecursive(sourcePath, destPath);
+                ["itemcount"] = uncached.Count.ToString()
+            };
+            for (var i = 0; i < uncached.Count; i++)
+            {
+                formData[$"publishedfileids[{i}]"] = uncached[i];
+            }
+
+            var response = await HttpClient.PostAsync(
+                "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/",
+                new FormUrlEncodedContent(formData));
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+
+                var details = doc.RootElement
+                    .GetProperty("response")
+                    .GetProperty("publishedfiledetails");
+
+                foreach (var item in details.EnumerateArray())
+                {
+                    if (item.TryGetProperty("publishedfileid", out var idProp) &&
+                        item.TryGetProperty("title", out var titleProp))
+                    {
+                        var id = idProp.GetString();
+                        var title = titleProp.GetString();
+                        if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(title))
+                        {
+                            result[id] = title;
+                            cache[id] = title;
+                        }
+                    }
+                }
+
+                await SaveTitleCacheAsync();
             }
         }
-    }
-
-    // ── Remove from Workshop ─────────────────────────────────────────
-
-    /// <summary>
-    /// Deletes specific mod folders from the workshop content directory.
-    /// </summary>
-    public int RemoveMods(string workshopContentPath, IEnumerable<string> modIds)
-    {
-        var count = 0;
-        foreach (var modId in modIds)
+        catch
         {
-            var modPath = Path.Combine(workshopContentPath, modId);
-            if (Directory.Exists(modPath))
-            {
-                Directory.Delete(modPath, recursive: true);
-                count++;
-            }
-        }
-        return count;
-    }
-
-    /// <summary>
-    /// Deletes ALL mod folders from the workshop content directory.
-    /// </summary>
-    public int RemoveAllMods(string workshopContentPath)
-    {
-        if (!Directory.Exists(workshopContentPath))
-            return 0;
-
-        var dirs = Directory.GetDirectories(workshopContentPath);
-        foreach (var dir in dirs)
-        {
-            Directory.Delete(dir, recursive: true);
-        }
-        return dirs.Length;
-    }
-
-    // ── Restore from Backup ──────────────────────────────────────────
-
-    /// <summary>
-    /// Copies mod folders from a profile backup back into the workshop content directory.
-    /// </summary>
-    public int RestoreMods(string workshopContentPath, string backupDir, IEnumerable<string>? modIds = null)
-    {
-        if (!Directory.Exists(backupDir))
-            return 0;
-
-        var count = 0;
-        var dirsToRestore = modIds != null
-            ? modIds.Select(id => Path.Combine(backupDir, id)).Where(Directory.Exists)
-            : Directory.GetDirectories(backupDir);
-
-        foreach (var sourceDir in dirsToRestore)
-        {
-            var modId = Path.GetFileName(sourceDir);
-            var destPath = Path.Combine(workshopContentPath, modId);
-
-            // Remove existing if present, then copy fresh from backup
-            if (Directory.Exists(destPath))
-                Directory.Delete(destPath, recursive: true);
-
-            CopyDirectoryRecursive(sourceDir, destPath);
-            count++;
+            // Silently fall back — titles will just show IDs
         }
 
-        return count;
+        return result;
     }
 
-    // ── Apply Profile ────────────────────────────────────────────────
-
-    /// <summary>
-    /// Applies a profile: removes all mods from workshop, then restores only the profile's mods from backup.
-    /// </summary>
-    public int ApplyProfile(string workshopContentPath, string backupDir)
-    {
-        RemoveAllMods(workshopContentPath);
-        return RestoreMods(workshopContentPath, backupDir);
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────
-
-    private static void CopyDirectoryRecursive(string sourceDir, string destDir)
-    {
-        Directory.CreateDirectory(destDir);
-
-        foreach (var file in Directory.GetFiles(sourceDir))
-        {
-            var destFile = Path.Combine(destDir, Path.GetFileName(file));
-            File.Copy(file, destFile, overwrite: true);
-        }
-
-        foreach (var subDir in Directory.GetDirectories(sourceDir))
-        {
-            var destSubDir = Path.Combine(destDir, Path.GetFileName(subDir));
-            CopyDirectoryRecursive(subDir, destSubDir);
-        }
-    }
 }
 
 public class InstalledMod
 {
     public string PublishedFileId { get; set; } = string.Empty;
-    public string FolderPath { get; set; } = string.Empty;
-    public bool IsEnabled { get; set; }
     public string Title { get; set; } = string.Empty;
 }

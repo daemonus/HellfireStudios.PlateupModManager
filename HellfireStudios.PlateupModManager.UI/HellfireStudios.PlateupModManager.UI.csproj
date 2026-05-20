@@ -10,10 +10,16 @@
 
     <ItemGroup>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+        <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\HellfireStudios.PlateupModManager\HellfireStudios.PlateupModManager.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Resource Include="..\img\hellfire-studios.png" Link="Images\hellfire-studios.png" />
+        <Resource Include="..\img\plateup-logo.png" Link="Images\plateup-logo.png" />
     </ItemGroup>
 
 </Project>

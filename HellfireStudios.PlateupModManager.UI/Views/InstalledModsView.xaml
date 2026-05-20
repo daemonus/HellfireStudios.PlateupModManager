@@ -12,7 +12,7 @@
 
         <!-- Action Bar -->
         <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,16">
-            <Button Content="🗑 Remove All" Command="{Binding RemoveAllCommand}"
+            <Button Content="🗑 Unsubscribe All" Command="{Binding UnsubscribeAllCommand}"
                     Style="{StaticResource DangerButtonStyle}" Margin="0,0,8,0" />
             <Button Content="↻ Refresh" Command="{Binding RefreshCommand}"
                     Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" />
@@ -65,9 +65,9 @@
                                            FontSize="11" Foreground="#6c7086" Margin="0,2,0,0" />
                             </StackPanel>
 
-                            <!-- Remove button -->
-                            <Button Grid.Column="2" Content="🗑 Remove" VerticalAlignment="Center"
-                                    Command="{Binding DataContext.RemoveModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            <!-- Unsubscribe button -->
+                            <Button Grid.Column="2" Content="🗑 Unsubscribe" VerticalAlignment="Center"
+                                    Command="{Binding DataContext.UnsubscribeModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"
                                     Style="{StaticResource DangerButtonStyle}" FontSize="12" />
                         </Grid>

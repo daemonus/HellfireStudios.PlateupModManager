@@ -6,7 +6,6 @@ namespace HellfireStudios.PlateupModManager.Services;
 public class ProfileService
 {
     private readonly string _profilesDirectory;
-    private readonly string _backupsDirectory;
     private readonly string _settingsFilePath;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -22,19 +21,9 @@ public class ProfileService
             "PlateupModManager");
 
         _profilesDirectory = Path.Combine(appDataPath, "Profiles");
-        _backupsDirectory = Path.Combine(appDataPath, "ProfileBackups");
         _settingsFilePath = Path.Combine(appDataPath, "settings.json");
 
         Directory.CreateDirectory(_profilesDirectory);
-        Directory.CreateDirectory(_backupsDirectory);
-    }
-
-    /// <summary>
-    /// Returns the backup directory for a given profile.
-    /// </summary>
-    public string GetProfileBackupPath(string profileId)
-    {
-        return Path.Combine(_backupsDirectory, profileId);
     }
 
     // ── Profiles ──────────────────────────────────────────────────────
@@ -88,23 +77,15 @@ public class ProfileService
             return false;
 
         File.Delete(filePath);
-
-        // Also delete the backup directory
-        var backupDir = GetProfileBackupPath(profileId);
-        if (Directory.Exists(backupDir))
-            Directory.Delete(backupDir, recursive: true);
-
         return true;
     }
 
     /// <summary>
-    /// Creates a profile from the given mods and backs up their files from the workshop.
+    /// Creates a profile from the given mods (stores mod IDs and titles only).
     /// </summary>
     public async Task<ModProfile> CreateProfileFromModsAsync(
         string name,
         string description,
-        string workshopContentPath,
-        ModManagerService modManager,
         IEnumerable<InstalledMod> mods)
     {
         var modList = mods.ToList();
@@ -120,11 +101,6 @@ public class ProfileService
         };
 
         await SaveProfileAsync(profile);
-
-        // Back up the mod files
-        var backupDir = GetProfileBackupPath(profile.Id);
-        modManager.BackupMods(workshopContentPath, backupDir, modList.Select(m => m.PublishedFileId));
-
         return profile;
     }
 
@@ -153,24 +129,19 @@ public class ProfileService
                 }).ToList()
             };
             await SaveProfileAsync(speedRun);
-
-            // Back up the mod files for the speed run profile
-            var backupDir = GetProfileBackupPath(SpeedRunProfileId);
-            modManager.BackupMods(workshopContentPath, backupDir, installed.Select(m => m.PublishedFileId));
         }
 
-        // Clean profile — empty mod list, applying it removes everything
+        // Clean profile — empty mod list, applying it unsubscribes from everything
         if (await GetProfileAsync(CleanProfileId) == null)
         {
             var clean = new ModProfile
             {
                 Id = CleanProfileId,
                 Name = "Clean (No Mods)",
-                Description = "Removes all mods for a vanilla PlateUp! experience.",
+                Description = "Unsubscribes from all mods for a vanilla PlateUp! experience.",
                 Mods = []
             };
             await SaveProfileAsync(clean);
-            // No backup needed — Clean profile has no mods
         }
     }
 
