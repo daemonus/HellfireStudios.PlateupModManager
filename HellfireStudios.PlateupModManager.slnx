@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Files/">
+    <File Path=".github\workflows\release.yaml" />
+    <File Path=".github\workflows\validate-semver-label.yml" />
+  </Folder>
   <Project Path="HellfireStudios.PlateupModManager.UI\HellfireStudios.PlateupModManager.UI.csproj" Type="Classic C#" />
   <Project Path="HellfireStudios.PlateupModManager\HellfireStudios.PlateupModManager.csproj" Type="Classic C#" />
 </Solution>
