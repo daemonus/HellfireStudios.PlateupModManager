@@ -1,0 +1,24 @@
+name: Create Draft Release Changelog
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  draft:
+    name: Draft release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - id: release-drafter
+        uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          commitish: main
